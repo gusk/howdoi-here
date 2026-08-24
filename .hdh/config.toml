@@ -1,0 +1,21 @@
+# hdh configuration. Every value here is optional.
+
+# Backend preference: "auto" walks anthropic -> claude-cli -> offline.
+# Pin one with "anthropic", "claude-cli", or "offline".
+backend = "auto"
+
+# Model used by the anthropic backend, and the alias used by the claude-cli backend.
+model = "claude-opus-5"
+cli_model = "opus"
+
+# How much context to assemble per question.
+max_snippets = 6
+max_knowledge = 3
+chunk_lines = 45
+
+# Extra knowledge sources. Paths are relative to the project root, or absolute.
+# Point these at a checked-out docs repo to share one knowledge base across a team.
+knowledge_paths = ["docs"]
+
+# Directory names to skip on top of the built-in ignore list.
+exclude = []
