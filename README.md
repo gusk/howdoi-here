@@ -22,31 +22,56 @@ citing real files and real line numbers.
 
 
 ```console
-$ hdh how do i map a list of rows into models
+$ hdh map a hash in a function --why
+╭─ why this answer ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ question        map a hash in a function                                                                                                                                                      │
+│ keywords        map, hash, function                                                                                                                                                           │
+│ context terms   ruby                                                                                                                                                                          │
+│ fts match       "map" OR "comprehension" OR "transform" OR "select" OR "hash" OR "function"                                                                                                   │
+│ code hits       6                                                                                                                                                                             │
+│ knowledge hits  0                                                                                                                                                                             │
+│ prompt chars    2145                                                                                                                                                                          │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  C1 lib/api_steward/strategies.rb:89  Anonymous  score 6.13
+  C2 lib/api_steward/problem.rb:8  Problem  score 4.88
+  C3 lib/api_steward/configuration.rb:113  coerce_brownouts  score 3.84
+  C4 lib/api_steward/usage.rb:42  summary  score 3.74
+  C5 lib/api_steward/dashboard.rb:1  ApiSteward  score 3.47
+  C6 README.md:148  Rack (config.ru)  score 4.66
 
-  ruby 3.3.4 · Rails · Faraday · Puma · RSpec · RuboCop — from Gemfile · via claude-cli
+  ruby · Minitest  — from Gemfile · via claude-cli
 
-  Already solved — use UserImporter.call, which is exactly this:
-  rows.map { |row| User.new(...) } (app/services/user_importer.rb:1).
-  Build with User.new so validations run; only drop to insert_all
-  (UserImporter.import!, app/services/user_importer.rb:15) on bulk paths already
-  validated upstream. No for loops — Style/For fails the build.
+Yes — the repo already does this in two shapes; pick by what you want back.
 
-      users = UserImporter.call(rows)
-      # => rows.map { |row| User.new(id: row[:id].to_i, email: row[:email].downcase) }
+ • Hash → Array of objects: destructure the pair in the block, like ApiSteward::Usage#summary at lib/api_steward/usage.rb:42 (@buckets.map do |version, b|), then sort with sort_by.
+ • Hash → Hash: build the literal and .compact it, like Problem.response at lib/api_steward/problem.rb:8. For key/value rewriting use transform_values / each_with_object({}) rather than map {
+   }.to_h — and .freeze the result if it's config-shaped, as coerce_brownouts does at lib/api_steward/configuration.rb:113.
 
-      # Adding a field? Extend the map in UserImporter.call, e.g.:
-      def self.call(rows)
-        rows.map do |row|
-          User.new(id: row[:id].to_i, email: row[:email].downcase, name: row[:name]&.strip)
-        end
-      end
+Methods live in module_function modules or plain instance methods; no Enumerable#map monkeypatching anywhere.
 
-  If you need a lookup Hash keyed off the rows instead of a list, use
-  each_with_object({}), not reduce/inject.
 
-  Sources: app/services/user_importer.rb:1, app/services/user_importer.rb:15,
-  .hdh/knowledge/ruby-style.md:1
+ # frozen_string_literal: true
+
+ module ApiSteward
+   module Something
+     module_function
+
+     # Hash -> Array of rows (Usage#summary shape)
+     def rows(buckets)
+       buckets.map do |version, b|
+         Row.new(version: version, requests: b[:requests], last_seen: b[:last_seen])
+       end.sort_by { |row| -row.requests }
+     end
+
+     # Hash -> Hash (Problem.response shape): drop nils, freeze if it's config
+     def normalize(headers)
+       headers.transform_values { |v| v&.to_s }.compact.freeze
+     end
+   end
+ end
+
+
+If the hash is shared mutable state, wrap the read in @mutex.synchronize and map outside the lock, exactly as lib/api_steward/usage.rb:42 does.
 ```
 
 Nothing in that answer is generic. `UserImporter.call` and `import!` came from the repo. The
