@@ -1,0 +1,6 @@
+# Normalise to LF in the repository and on checkout. A CRLF shell script fails
+# in Linux containers with "bad interpreter: /usr/bin/env bash^M".
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+*.db binary
