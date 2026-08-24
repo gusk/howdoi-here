@@ -72,11 +72,32 @@ useful on its own, and it's what keeps the test suite deterministic and the CI r
 
 ## Install
 
+Requires **Python 3.11+**. No API key, no account, no services.
+
 ```bash
-pip install -e ".[api,mcp]"    # extras are optional
-hdh index                       # first run builds this automatically
-hdh how do i retry a failed request
+git clone https://github.com/gusss/howdoi-here && cd howdoi-here
+
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+pip install .
+hdh doctor                       # confirm it works
 ```
+
+Then ask it something — from this repo, or any other project on your machine:
+
+```bash
+hdh how do i retry a failed request
+cd ~/some/other/project && hdh how do i map a list
+```
+
+The index builds itself on first use and updates incrementally after that.
+
+Optional extras: `pip install ".[api]"` for the Anthropic SDK backend, `".[mcp]"` for the
+MCP server, `".[dev]"` for the test suite.
+
+> **If `hdh` isn't found**, your Python scripts directory isn't on `PATH`. Either activate a
+> venv as above, or use the equivalent module form: `python -m hdh how do i map a list`.
 
 ## Usage
 
