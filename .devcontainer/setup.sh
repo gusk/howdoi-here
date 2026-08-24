@@ -14,7 +14,7 @@ cat <<'BANNER'
       hdh how do i rank search results --why
 
   Prove the premise -- same question, different stacks:
-      hdh how do i map a list -C tests/fixtures/py_project
+      hdh how do i map a list -C tests/fixtures/rails_project
       hdh how do i map a list -C tests/fixtures/ts_project
 
   Inspect without calling a model:

@@ -41,6 +41,8 @@ FRAMEWORKS = {
     "gin-gonic/gin": "Gin", "labstack/echo": "Echo", "gorm.io/gorm": "GORM",
     "spf13/cobra": "Cobra", "tokio": "Tokio", "axum": "Axum", "serde": "Serde",
     "actix-web": "Actix", "rails": "Rails", "sinatra": "Sinatra",
+    "sidekiq": "Sidekiq", "faraday": "Faraday", "puma": "Puma",
+    "activerecord": "ActiveRecord", "hotwire-rails": "Hotwire",
     "spring-boot-starter": "Spring Boot",
 }
 
@@ -49,6 +51,7 @@ TEST_TOOLS = {
     "jest": "Jest", "vitest": "Vitest", "mocha": "Mocha", "@playwright/test": "Playwright",
     "cypress": "Cypress", "testify": "testify", "rspec": "RSpec", "minitest": "Minitest",
     "junit": "JUnit", "xunit": "xUnit", "nunit": "NUnit",
+    "rspec-rails": "RSpec", "minitest-rails": "Minitest",
 }
 
 LINT_TOOLS = {
@@ -63,6 +66,14 @@ LOCKFILE_PM = {
     "pdm.lock": "pdm", "requirements.txt": "pip",
     "pnpm-lock.yaml": "pnpm", "yarn.lock": "yarn", "package-lock.json": "npm",
     "bun.lockb": "bun", "Cargo.lock": "cargo", "go.sum": "go modules", "Gemfile.lock": "bundler",
+}
+
+# The app framework identifies a stack far better than its libraries do; without this
+# ordering the one-line summary reads "Faraday, Puma, Rails" instead of "Rails" first.
+HEADLINE_FRAMEWORKS = {
+    "Rails", "Django", "Flask", "FastAPI", "Starlette", "Sinatra", "Spring Boot",
+    "React", "Next.js", "Vue", "Svelte", "Angular", "Express", "Fastify", "NestJS",
+    "Gin", "Echo", "Actix", "Axum",
 }
 
 _REQ_LINE = re.compile(r"^\s*([A-Za-z0-9._-]+)\s*(?:\[[^\]]*\])?\s*([<>=!~^].*)?$")
@@ -226,7 +237,10 @@ def _parse_cargo(path: Path, fp: Fingerprint) -> None:
 
 
 def _parse_gemfile(path: Path, fp: Fingerprint) -> None:
-    for name, ver in _GEM.findall(_read(path)):
+    text = _read(path)
+    if m := re.search(r"^\s*ruby\s+['\"]([\d.]+)['\"]", text, re.M):
+        fp.runtimes["ruby"] = m.group(1)
+    for name, ver in _GEM.findall(text):
         fp.deps.append(Dep(name, ver or None))
 
 
@@ -292,7 +306,10 @@ def build(root: Path, exclude: list[str] | None = None) -> Fingerprint:
             fp.tools.setdefault("test", t)
         if lint := LINT_TOOLS.get(key):
             fp.tools.setdefault("lint", lint)
-    fp.frameworks = list(dict.fromkeys(fp.frameworks))
+    fp.frameworks = sorted(
+        dict.fromkeys(fp.frameworks),
+        key=lambda f: (f not in HEADLINE_FRAMEWORKS,),
+    )
 
     if (root / "Dockerfile").is_file():
         fp.tools.setdefault("container", "Docker")

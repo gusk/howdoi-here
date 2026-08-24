@@ -19,27 +19,35 @@ citing real files and real line numbers.
 ```console
 $ hdh how do i map a list of rows into models
 
-  python >=3.11 · FastAPI · httpx · Pydantic · ruff · pytest — from pyproject.toml · via claude-cli
+  ruby 3.3.4 · Rails · Faraday · Puma · RSpec · RuboCop — from Gemfile · via claude-cli
 
-  Use a list comprehension with model_validate — never map() (ruff C417 fails
-  CI). src/loaders.py:12 already does exactly this pattern.
+  Already solved — use UserImporter.call, which is exactly this:
+  rows.map { |row| User.new(...) } (app/services/user_importer.rb:1).
+  Build with User.new so validations run; only drop to insert_all
+  (UserImporter.import!, app/services/user_importer.rb:15) on bulk paths already
+  validated upstream. No for loops — Style/For fails the build.
 
-      def load_users(rows: list[dict]) -> list[User]:
-          """Map raw rows onto User records. We use comprehensions, never map()."""
-          return [User.model_validate(r) for r in rows]
+      users = UserImporter.call(rows)
+      # => rows.map { |row| User.new(id: row[:id].to_i, email: row[:email].downcase) }
 
-  model_validate over hand-constructing gives validation errors with field paths,
-  which the on-call runbook relies on. If you need lookup afterwards, index_by_id
-  at src/loaders.py:21 covers it; if rows come from an HTTP call, wrap the fetch
-  in with_retry (src/retry.py:7).
+      # Adding a field? Extend the map in UserImporter.call, e.g.:
+      def self.call(rows)
+        rows.map do |row|
+          User.new(id: row[:id].to_i, email: row[:email].downcase, name: row[:name]&.strip)
+        end
+      end
 
-  Sources: .hdh/knowledge/python-style.md:3, src/loaders.py:12,
-  src/loaders.py:21, src/retry.py:7
+  If you need a lookup Hash keyed off the rows instead of a list, use
+  each_with_object({}), not reduce/inject.
+
+  Sources: app/services/user_importer.rb:1, app/services/user_importer.rb:15,
+  .hdh/knowledge/ruby-style.md:1
 ```
 
-Nothing in that answer is generic. The `ruff C417` rule, the `model_validate` preference and
-the `with_retry` requirement all came from the team's own knowledge base. `load_users` and
-`index_by_id` came from the repo. Run the same command in a TypeScript project and you get
+Nothing in that answer is generic. `UserImporter.call` and `import!` came from the repo. The
+`User.new`-over-`insert_all` rule, the `Style/For` ban and the `each_with_object` preference
+over `reduce` all came from the team's own knowledge base — none of them are things a model
+would otherwise know about ACME. Run the same command in a TypeScript project and you get
 `Array.map()` and `Vitest`, because that's what that repo is.
 
 ---
@@ -78,8 +86,8 @@ browser terminal with `hdh` installed and this repo already indexed — nothing 
 machine. The container prints what to run; the fastest way to see the point is:
 
 ```bash
-hdh how do i map a list -C tests/fixtures/py_project   # → comprehensions, Pydantic, ruff C417
-hdh how do i map a list -C tests/fixtures/ts_project   # → Array.map(), Vitest, ESLint
+hdh how do i map a list -C tests/fixtures/rails_project  # → rows.map { User.new }, RSpec, RuboCop
+hdh how do i map a list -C tests/fixtures/ts_project     # → Array.map(), Vitest, ESLint
 ```
 
 Same question. Different repo. Different answer — which is the entire idea.
@@ -144,18 +152,19 @@ every chunk that was retrieved with its score — so you can see whether an answ
 or improvised:
 
 ```console
-$ hdh how do i map a list of rows --why
+$ hdh how do i map a list of rows into models --why
 ┌─ why this answer ───────────────────────────────────────────────┐
-│ question        how do i map a list of rows                     │
-│ keywords        map, list, rows                                 │
-│ context terms   python, fastapi, httpx, pydantic, sqlalchemy    │
+│ question        how do i map a list of rows into models         │
+│ keywords        map, list, rows, models                         │
+│ context terms   ruby, rails, faraday, puma, sidekiq             │
 │ code hits       4                                               │
 │ knowledge hits  1                                               │
-│ prompt chars    2119                                            │
+│ prompt chars    2010                                            │
 └─────────────────────────────────────────────────────────────────┘
-  K1 .hdh/knowledge/python-style.md:3    score 6.86
-  C1 src/loaders.py:12  load_users       score 3.99
-  C2 src/retry.py:7     with_retry       score 0.36
+  K1 .hdh/knowledge/ruby-style.md:1                    score 1.32
+  C1 app/services/user_importer.rb:1   UserImporter    score 4.48
+  C2 app/services/user_importer.rb:15  self            score 3.89
+  C3 app/clients/acme_client.rb:1      AcmeClient      score 0.93
 ```
 
 ## Team knowledge base
@@ -169,8 +178,9 @@ knowledge_paths = ["docs", "../platform-runbooks"]
 ```
 
 Internal docs are indexed alongside code and are explicitly labelled in the prompt as
-outranking general best practice — so "we always go through `with_retry`" beats whatever the
-model would otherwise have said about `httpx`. Answers cite the doc by path and line, which
+outranking general best practice — so "all outbound HTTP goes through `AcmeClient.connection`"
+beats whatever the model would otherwise have said about Faraday. Answers cite the doc by
+path and line, which
 means a wrong answer points at the doc that needs fixing.
 
 Because knowledge sources are just directories, a team can keep one canonical repo of
@@ -226,11 +236,12 @@ functions over the filesystem. That makes the interesting part fast, cacheable, 
 testable without an API key — which is why CI can assert the core claim on every push:
 
 ```python
-def test_retrieved_context_is_disjoint_across_projects(py_project, ts_project, tmp_path):
-    """One question, two repos, zero overlap in what gets sent to the model."""
-    assert py_langs == {"python"}
-    assert ts_langs == {"typescript"}
-    assert not py_langs & ts_langs
+def test_three_stacks_retrieve_disjoint_context(
+    rails_project, py_project, ts_project, tmp_path
+):
+    """One question, three repos, no overlap in what reaches the model."""
+    assert langs == [{"ruby"}, {"python"}, {"typescript"}]
+    assert not set.intersection(*langs)
 ```
 
 **Fingerprint terms widen, never rescue.** If your own keywords match nothing, matching
@@ -255,7 +266,7 @@ Environment overrides: `HDH_BACKEND`, `HDH_MODEL`, `HDH_CLI_MODEL`.
 
 ```bash
 pip install -e ".[dev,api,mcp]"
-pytest -q          # 58 tests, no credentials needed
+pytest -q          # 66 tests, no credentials needed
 ruff check .
 mypy
 ```

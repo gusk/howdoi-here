@@ -59,3 +59,31 @@ def test_vendor_directories_are_ignored(py_project: Path) -> None:
     noise.mkdir(parents=True)
     (noise / "a.py").write_text("x = 1")
     assert fingerprint.build(py_project).file_count == 2
+
+
+def test_rails_project_is_detected(rails_project: Path) -> None:
+    fp = fingerprint.build(rails_project)
+    assert fp.primary == "ruby"
+    assert fp.runtimes["ruby"] == "3.3.4"
+    assert "Gemfile" in fp.manifests
+    assert "Rails" in fp.frameworks
+    assert fp.tools["test"] == "RSpec"
+    assert fp.tools["lint"] == "RuboCop"
+    assert fp.dep_version("rails") == "~> 7.1.3"
+
+
+def test_app_framework_leads_the_summary(rails_project: Path) -> None:
+    """Rails identifies the stack; Faraday and Puma do not. Order matters in the header."""
+    fp = fingerprint.build(rails_project)
+    assert fp.frameworks[0] == "Rails"
+    assert fp.summary().startswith("ruby 3.3.4 · Rails")
+
+
+def test_three_stacks_share_no_query_terms(
+    rails_project: Path, py_project: Path, ts_project: Path
+) -> None:
+    rb = set(fingerprint.build(rails_project).query_terms())
+    py = set(fingerprint.build(py_project).query_terms())
+    ts = set(fingerprint.build(ts_project).query_terms())
+    assert "ruby" in rb and "rails" in rb
+    assert not (rb & py) and not (rb & ts) and not (py & ts)

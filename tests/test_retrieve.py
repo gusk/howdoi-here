@@ -113,3 +113,34 @@ def test_no_matches_is_not_an_error(py_project: Path, tmp_path: Path) -> None:
 def test_limits_are_honoured(py_project: Path, tmp_path: Path, limit: int) -> None:
     index, fp = _prepare(py_project, tmp_path / f"l{limit}.db")
     assert len(retrieve(index, fp, "users rows map", max_code=limit).code) <= limit
+
+
+def test_same_question_yields_ruby_context(rails_project: Path, tmp_path: Path) -> None:
+    index, fp = _prepare(rails_project, tmp_path / "rb.db")
+    r = retrieve(index, fp, QUESTION)
+    assert r.code
+    top = r.code[0]
+    assert top.lang == "ruby"
+    assert top.path == "app/services/user_importer.rb"
+    assert "rows.map" in top.body
+    assert "ruby" in r.context_terms
+
+
+def test_three_stacks_retrieve_disjoint_context(
+    rails_project: Path, py_project: Path, ts_project: Path, tmp_path: Path
+) -> None:
+    """One question, three repos, no overlap in what reaches the model."""
+    langs = []
+    for name, root in (("rb", rails_project), ("py", py_project), ("ts", ts_project)):
+        index, fp = _prepare(root, tmp_path / f"{name}.db")
+        langs.append({h.lang for h in retrieve(index, fp, QUESTION).code})
+
+    assert langs == [{"ruby"}, {"python"}, {"typescript"}]
+    assert not set.intersection(*langs)
+
+
+def test_rails_team_convention_is_retrieved(rails_project: Path, tmp_path: Path) -> None:
+    index, fp = _prepare(rails_project, tmp_path / "rbk.db", knowledge=True)
+    r = retrieve(index, fp, "should i use a for loop or map")
+    assert r.knowledge
+    assert "Style/For" in r.knowledge[0].body or "for` loop" in r.knowledge[0].body

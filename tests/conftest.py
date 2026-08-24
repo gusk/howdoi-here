@@ -25,3 +25,9 @@ def py_project(tmp_path: Path) -> Path:
 def ts_project(tmp_path: Path) -> Path:
     """A React/Zod project that maps rows with Array.map()."""
     return _copy("ts_project", tmp_path)
+
+
+@pytest.fixture
+def rails_project(tmp_path: Path) -> Path:
+    """A Rails project that maps rows with Enumerable and bans `for` loops."""
+    return _copy("rails_project", tmp_path)
