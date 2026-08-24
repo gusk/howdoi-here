@@ -73,13 +73,6 @@ Methods live in module_function modules or plain instance methods; no Enumerable
 
 If the hash is shared mutable state, wrap the read in @mutex.synchronize and map outside the lock, exactly as lib/api_steward/usage.rb:42 does.
 ```
-
-Nothing in that answer is generic. `UserImporter.call` and `import!` came from the repo. The
-`User.new`-over-`insert_all` rule, the `Style/For` ban and the `each_with_object` preference
-over `reduce` all came from the team's own knowledge base — none of them are things a model
-would otherwise know about ACME. Run the same command in a TypeScript project and you get
-`Array.map()` and `Vitest`, because that's what that repo is.
-
 ---
 
 ## No API key required. Ever.
