@@ -80,3 +80,26 @@ def test_lang_and_kind_filters(index: Index, py_project: Path) -> None:
     build_index(index, py_project, knowledge_dirs=[py_project / ".hdh" / "knowledge"])
     assert all(h.lang == "python" for h in index.search('"users"', lang="python"))
     assert all(h.kind == "code" for h in index.search('"users"', kind="code"))
+
+
+def test_index_dir_ignores_its_own_database(tmp_path: Path) -> None:
+    """The db holds full source text; committing it would leak a whole codebase."""
+    db = tmp_path / ".hdh" / "index.db"
+    with Index(db):
+        pass
+    ignore = db.parent / ".gitignore"
+    assert ignore.exists()
+    body = ignore.read_text()
+    assert "index.db" in body
+    # config and knowledge stay committable -- sharing those is the point
+    assert "config.toml" not in body
+    assert "knowledge" not in body
+
+
+def test_existing_gitignore_is_not_clobbered(tmp_path: Path) -> None:
+    hdh = tmp_path / ".hdh"
+    hdh.mkdir()
+    (hdh / ".gitignore").write_text("custom rules\n")
+    with Index(hdh / "index.db"):
+        pass
+    assert (hdh / ".gitignore").read_text() == "custom rules\n"

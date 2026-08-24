@@ -68,6 +68,21 @@ class IndexStats:
     removed: int = 0
 
 
+# The index holds the full text of the user's source. Committing it would leak a whole
+# codebase as an opaque blob, so the index directory ignores its own database. Config and
+# knowledge/ are deliberately left committable -- sharing those is the point.
+SELF_IGNORE = "index.db\nindex.db-*\ncache/\n"
+
+
+def _self_ignore(hdh_dir: Path) -> None:
+    ignore = hdh_dir / ".gitignore"
+    try:
+        if not ignore.exists():
+            ignore.write_text(SELF_IGNORE, encoding="utf-8")
+    except OSError:
+        pass
+
+
 def _digest(path: Path) -> str:
     st = path.stat()
     return hashlib.blake2b(f"{st.st_mtime_ns}:{st.st_size}".encode(), digest_size=8).hexdigest()
@@ -77,6 +92,7 @@ class Index:
     def __init__(self, db_path: Path):
         self.db_path = db_path
         db_path.parent.mkdir(parents=True, exist_ok=True)
+        _self_ignore(db_path.parent)
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
