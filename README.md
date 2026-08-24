@@ -2,7 +2,8 @@
 
 **`howdoi`, but it knows what repo you're standing in.**
 
-[![CI](https://github.com/gusss/howdoi-here/actions/workflows/ci.yml/badge.svg)](https://github.com/gusss/howdoi-here/actions/workflows/ci.yml)
+[![CI](https://github.com/gusk/howdoi-here/actions/workflows/ci.yml/badge.svg)](https://github.com/gusk/howdoi-here/actions/workflows/ci.yml)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/gusk/howdoi-here)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -70,12 +71,31 @@ $ hdh doctor
 Offline mode isn't a degraded stub — contextual code search over your own repo is genuinely
 useful on its own, and it's what keeps the test suite deterministic and the CI run free.
 
+## Try it without installing anything
+
+Click **[Open in GitHub Codespaces](https://codespaces.new/gusk/howdoi-here)**. You get a
+browser terminal with `hdh` installed and this repo already indexed — nothing lands on your
+machine. The container prints what to run; the fastest way to see the point is:
+
+```bash
+hdh how do i map a list -C tests/fixtures/py_project   # → comprehensions, Pydantic, ruff C417
+hdh how do i map a list -C tests/fixtures/ts_project   # → Array.map(), Vitest, ESLint
+```
+
+Same question. Different repo. Different answer — which is the entire idea.
+
+A Codespace has no API key, so it runs in `offline` mode: real ranked snippets from real code,
+no model. That's enough to evaluate the retrieval, and `--why` shows precisely what was
+matched. For full AI answers, add `ANTHROPIC_API_KEY` as a
+[Codespaces secret](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-your-codespaces)
+and rebuild; nothing else changes.
+
 ## Install
 
 Requires **Python 3.11+**. No API key, no account, no services.
 
 ```bash
-git clone https://github.com/gusss/howdoi-here && cd howdoi-here
+git clone https://github.com/gusk/howdoi-here && cd howdoi-here
 
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
