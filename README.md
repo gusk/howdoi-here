@@ -83,7 +83,13 @@ useful on its own, and it's what keeps the test suite deterministic and the CI r
 
 Click **[Open in GitHub Codespaces](https://codespaces.new/gusk/howdoi-here)**. You get a
 browser terminal with `hdh` installed and this repo already indexed — nothing lands on your
-machine. The container prints what to run; the fastest way to see the point is:
+machine, and it runs on your own free Codespaces quota, not the maintainer's.
+
+**First boot takes a couple of minutes** while it pulls the image, installs the package and
+builds the index. It isn't stuck; the terminal prints a banner when it's ready. Subsequent
+starts are quick.
+
+The banner lists what to run; the fastest way to see the point is:
 
 ```bash
 hdh how do i map a list -C tests/fixtures/rails_project  # → rows.map { User.new }, RSpec, RuboCop

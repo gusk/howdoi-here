@@ -2,8 +2,11 @@
 # Runs once when the Codespace is created.
 set -euo pipefail
 
+echo "==> Installing howdoi-here (this is the slow part, ~1-2 min)..."
 pip install --no-cache-dir -e ".[dev,api,mcp]"
-hdh index >/dev/null 2>&1 || true
+
+echo "==> Indexing this repository..."
+hdh index || true
 
 cat <<'BANNER'
 
