@@ -16,6 +16,11 @@ and it has never heard of the convention your team argued about in a PR six mont
 your team's internal docs, and answers in the idiom of the codebase you're sitting in —
 citing real files and real line numbers.
 
+
+<img width="929" height="614" alt="hdh ss 3" src="https://github.com/user-attachments/assets/b2920b45-e752-4b96-8504-b1b7ab778179" />
+
+
+
 ```console
 $ hdh how do i map a list of rows into models
 
@@ -103,6 +108,8 @@ no model. That's enough to evaluate the retrieval, and `--why` shows precisely w
 matched. For full AI answers, add `ANTHROPIC_API_KEY` as a
 [Codespaces secret](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-your-codespaces)
 and rebuild; nothing else changes.
+<img width="2180" height="1355" alt="hdh ss" src="https://github.com/user-attachments/assets/6ed7555f-73ec-4268-bca4-b66ac5872443" /><img width="989" height="899" alt="hdh ss 2" src="https://github.com/user-attachments/assets/97986707-c2c5-499a-ac91-75e59d4225db" />
+
 
 ## Install
 
